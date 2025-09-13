@@ -26,7 +26,6 @@ function saveHostJobs() {
     fs.writeFileSync(DATA_FILE, JSON.stringify(hostJobs, null, 2));
 }
 
-// เช็ค host online หรือไม่
 async function isUserOnline(userId) {
     try {
         const res = await fetch("https://presence.roblox.com/v1/presence/users", {
@@ -36,8 +35,7 @@ async function isUserOnline(userId) {
         });
         const data = await res.json();
         if (data && data.userPresences && data.userPresences[0]) {
-            // presenceType 1 = online in game
-            return data.userPresences[0].presenceType === 1;
+            return data.userPresences[0].presenceType !== 0;
         }
         return false;
     } catch (err) {
