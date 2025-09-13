@@ -1,7 +1,6 @@
 // server.js
 import express from "express";
 import fs from "fs";
-import fetch from "node-fetch";
 import path from "path";
 
 const app = express();
