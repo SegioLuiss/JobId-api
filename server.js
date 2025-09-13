@@ -46,16 +46,17 @@ async function isUserOnline(userId) {
 
 // POST host jobId
 app.post("/jobid", (req, res) => {
-    const { username, userId, jobId, placeId } = req.body;
+    const { username, userId, jobId, placeId, players, maxPlayers, full } = req.body;
     if (!username || !jobId || !placeId || !userId) {
         return res.status(400).json({ error: "Missing username, userId, jobId, or placeId" });
     }
 
-    hostJobs[username] = { userId, jobId, placeId };
+    hostJobs[username] = { userId, jobId, placeId, players, maxPlayers, full };
     saveHostJobs();
-    console.log(`Host updated: ${username} => jobId: ${jobId}, placeId: ${placeId}`);
+    console.log(`Host updated: ${username} => jobId: ${jobId}, placeId: ${placeId}, full: ${full}`);
     res.json({ success: true });
 });
+
 
 // GET host jobId (เช็คว่า host online หรือไม่)
 app.get("/jobid", async (req, res) => {
@@ -74,3 +75,4 @@ app.get("/jobid", async (req, res) => {
 app.listen(port, () => {
     console.log(`JobId API running at http://localhost:${port}`);
 });
+
