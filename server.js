@@ -26,53 +26,44 @@ function saveHostJobs() {
     fs.writeFileSync(DATA_FILE, JSON.stringify(hostJobs, null, 2));
 }
 
-async function isUserOnline(userId) {
-    try {
-        const res = await fetch("https://presence.roblox.com/v1/presence/users", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userIds: [userId.toString()] })
-        });
-        const data = await res.json();
-        if (data && data.userPresences && data.userPresences[0]) {
-            return data.userPresences[0].presenceType !== 0;
-        }
-        return false;
-    } catch (err) {
-        console.error(err);
-        return false;
-    }
-}
-
-// POST host jobId
+// POST host jobId (heartbeat)
 app.post("/jobid", (req, res) => {
-    const { username, userId, jobId, placeId, players, maxPlayers } = req.body;
+    const { username, userId, jobId, placeId, players, maxPlayers, full } = req.body;
     if (!username || !jobId || !placeId || !userId) {
         return res.status(400).json({ error: "Missing username, userId, jobId, or placeId" });
     }
 
-    const full = players >= maxPlayers;
+    hostJobs[username] = { 
+        userId, 
+        jobId, 
+        placeId,
+        players: players || 0,
+        maxPlayers: maxPlayers || 0,
+        full: full || false,
+        lastUpdate: Date.now()
+    };
 
-    hostJobs[username] = { userId, jobId, placeId, players, maxPlayers, full };
     saveHostJobs();
-    console.log(`Host updated: ${username} => jobId: ${jobId}, placeId: ${placeId}, players: ${players}/${maxPlayers}, full: ${full}`);
+    console.log(`Host updated: ${username} => jobId: ${jobId}, placeId: ${placeId}, full: ${full}`);
     res.json({ success: true });
 });
 
-// GET host jobId (เช็คว่า host online หรือไม่)
-app.get("/jobid", async (req, res) => {
+// GET host jobId (ใช้ heartbeat เช็ค online)
+app.get("/jobid", (req, res) => {
     const hostName = req.query.host;
     if (!hostName) return res.status(400).json({ error: "Missing host query param" });
 
     const data = hostJobs[hostName];
     if (!data) return res.status(404).json({ error: "Host not found" });
 
-    const online = await isUserOnline(data.userId);
+    // ถ้า host ไม่ส่ง heartbeat เกิน 15 วิ → offline
+    const online = Date.now() - data.lastUpdate < 15000;
+
     if (!online) return res.status(200).json({ online: false });
 
-    res.json({
-        online: true,
-        jobId: data.jobId,
+    res.json({ 
+        online: true, 
+        jobId: data.jobId, 
         placeId: data.placeId,
         players: data.players,
         maxPlayers: data.maxPlayers,
