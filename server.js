@@ -46,17 +46,18 @@ async function isUserOnline(userId) {
 
 // POST host jobId
 app.post("/jobid", (req, res) => {
-    const { username, userId, jobId, placeId, players, maxPlayers, full } = req.body;
+    const { username, userId, jobId, placeId, players, maxPlayers } = req.body;
     if (!username || !jobId || !placeId || !userId) {
         return res.status(400).json({ error: "Missing username, userId, jobId, or placeId" });
     }
 
+    const full = players >= maxPlayers;
+
     hostJobs[username] = { userId, jobId, placeId, players, maxPlayers, full };
     saveHostJobs();
-    console.log(`Host updated: ${username} => jobId: ${jobId}, placeId: ${placeId}, full: ${full}`);
+    console.log(`Host updated: ${username} => jobId: ${jobId}, placeId: ${placeId}, players: ${players}/${maxPlayers}, full: ${full}`);
     res.json({ success: true });
 });
-
 
 // GET host jobId (เช็คว่า host online หรือไม่)
 app.get("/jobid", async (req, res) => {
@@ -69,10 +70,16 @@ app.get("/jobid", async (req, res) => {
     const online = await isUserOnline(data.userId);
     if (!online) return res.status(200).json({ online: false });
 
-    res.json({ online: true, jobId: data.jobId, placeId: data.placeId });
+    res.json({
+        online: true,
+        jobId: data.jobId,
+        placeId: data.placeId,
+        players: data.players,
+        maxPlayers: data.maxPlayers,
+        full: data.full
+    });
 });
 
 app.listen(port, () => {
     console.log(`JobId API running at http://localhost:${port}`);
 });
-
